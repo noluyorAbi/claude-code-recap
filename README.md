@@ -4,16 +4,16 @@
 
 Claude Code's built-in `/resume` only lists sessions for the directory you are standing in. After a reboot, a crash, or a week of jumping between five repos, there is no way to answer "what was I working on, and where did I leave off". `recap` answers that in one command, and can re-open a whole working set in terminal tabs.
 
-[![npm version](https://img.shields.io/npm/v/claude-code-recap?style=flat-square&logo=npm&logoColor=white&label=npm&labelColor=0b0b0b&color=d97757)](https://www.npmjs.com/package/claude-code-recap)
-[![npm downloads](https://img.shields.io/npm/dm/claude-code-recap?style=flat-square&logo=npm&logoColor=white&label=downloads&labelColor=0b0b0b&color=6e6e6e)](https://www.npmjs.com/package/claude-code-recap)
-[![ci](https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b)](https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml)
-[![license](https://img.shields.io/github/license/noluyorAbi/claude-code-recap?style=flat-square&label=license&labelColor=0b0b0b&color=6e6e6e)](LICENSE)
-<br>
-[![Claude Code](https://img.shields.io/badge/Claude_Code-skill_%2B_plugin-d97757?style=flat-square&logo=claude&logoColor=white&labelColor=0b0b0b)](https://code.claude.com/docs/en/skills)
-[![python](https://img.shields.io/badge/python-3_stdlib-6e6e6e?style=flat-square&logo=python&logoColor=white&labelColor=0b0b0b)](https://www.python.org/)
-[![dependencies](https://img.shields.io/badge/dependencies-zero-6e6e6e?style=flat-square&labelColor=0b0b0b)](package.json)
-[![platform](https://img.shields.io/badge/platform-macOS_%7C_Linux-6e6e6e?style=flat-square&logo=apple&logoColor=white&labelColor=0b0b0b)](#requirements)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-d97757?style=flat-square&labelColor=0b0b0b)](#contributing)
+[![npm version](https://img.shields.io/npm/v/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=npm&labelColor=0b0b0b&color=d97757)](https://www.npmjs.com/package/claude-code-recap)
+[![npm downloads](https://img.shields.io/npm/dm/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=downloads&labelColor=0b0b0b&color=3a3a3a)](https://www.npmjs.com/package/claude-code-recap)
+[![ci](https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b)](https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/noluyorAbi/claude-code-recap?style=for-the-badge&label=license&labelColor=0b0b0b&color=3a3a3a)](LICENSE)
+
+[![Claude Code](https://img.shields.io/badge/Claude_Code-skill_%2B_plugin-d97757?style=for-the-badge&logo=claude&logoColor=white&labelColor=0b0b0b)](https://code.claude.com/docs/en/skills)
+[![python](https://img.shields.io/badge/python-3_stdlib-3a3a3a?style=for-the-badge&logo=python&logoColor=white&labelColor=0b0b0b)](https://www.python.org/)
+[![dependencies](https://img.shields.io/badge/dependencies-zero-3a3a3a?style=for-the-badge&labelColor=0b0b0b)](package.json)
+[![platform](https://img.shields.io/badge/platform-macOS_%7C_Linux-3a3a3a?style=for-the-badge&logo=apple&logoColor=white&labelColor=0b0b0b)](#requirements)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-d97757?style=for-the-badge&labelColor=0b0b0b)](#contributing)
 
 <a href="assets/demo.mp4"><img src="assets/demo.gif" alt="recap listing recent Claude Code sessions across several projects, then re-opening them in terminal tabs" width="100%"></a>
 
