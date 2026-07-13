@@ -30,7 +30,7 @@ type Row = {
 
 const ROWS: Row[] = [
   { dot: projDot.mySaas, time: "18:42", rel: "12m ago", summary: "Ship the Stripe webhook retry queue", id: "a3f9c1d2" },
-  { dot: projDot.thesisDraft, time: "17:05", rel: "1h ago", summary: "Rewrite chapter 3 evaluation section", id: "7be40c19" },
+  { dot: projDot.paymentsApi, time: "17:05", rel: "1h ago", summary: "Add idempotency keys to the charge endpoint", id: "7be40c19" },
   { dot: projDot.apiGateway, time: "14:20", rel: "4h ago", summary: "Debug the 502 on the auth proxy", id: "c081ff5a" },
 ];
 

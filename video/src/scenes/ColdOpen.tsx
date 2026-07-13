@@ -15,7 +15,7 @@ import { claude, easing } from "../theme";
 const LINES: { text: string; color: string; bold: boolean }[] = [
   { text: "You rebooted.", color: claude.dim, bold: false },
   { text: "Eleven sessions.", color: claude.text, bold: false },
-  { text: "Which one was the thesis?", color: claude.bright, bold: true },
+  { text: "Which one was the hotfix?", color: claude.bright, bold: true },
 ];
 
 export const COLD_OPEN_DUR = 132;

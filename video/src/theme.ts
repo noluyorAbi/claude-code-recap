@@ -48,7 +48,7 @@ export const ansi = {
  */
 export const projDot = {
   mySaas: "#af87af", // xterm 139
-  thesisDraft: "#87afd7", // xterm 110
+  paymentsApi: "#87afd7", // xterm 110
   apiGateway: "#d787d7", // xterm 176
   portfolioSite: "#d7af87", // xterm 180
 } as const;
