@@ -81,6 +81,14 @@ Same guarantees as the npx path: sha256 manifest, no silent overwrite, `--force`
 curl -fsSL https://raw.githubusercontent.com/noluyorAbi/claude-code-recap/main/install.sh | sh -s -- --uninstall
 ```
 
+### 4. skills CLI
+
+If you use the [`skills`](https://skills.sh) directory CLI, recap resolves straight from this repo and installs across every agent it manages:
+
+```bash
+npx skills add noluyorAbi/claude-code-recap
+```
+
 Claude Code picks up `~/.claude/skills` without a restart. Restart only if that directory did not exist when the session started.
 
 Pick one path. Installing the skill *and* the plugin gives you `/recap` and `/claude-code-recap:recap` side by side; they will not conflict, but you carry two copies of the description in the skill listing.
