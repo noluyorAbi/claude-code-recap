@@ -17,6 +17,3 @@ remotion/out/
 .env
 .env.*
 .DS_Store
-
-# local marketing notes, not shipped
-PROMOTION.md
