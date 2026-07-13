@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-13
+
+### Changed
+
+- Discovery metadata only, no behavior change: keyword-tuned npm description, expanded npm keywords, and a refined GitHub topic set (added session-resume, python-cli, iterm2). README badges restyled (for-the-badge) and expanded.
+
 ## [1.2.0] - 2026-07-13
 
 First public release of the recap skill for Claude Code.

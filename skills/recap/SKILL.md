@@ -3,7 +3,7 @@ name: recap
 description: Show recent Claude Code sessions across all projects, so the user can re-enter work after a reboot or context switch. Lists per session the absolute project path, a short summary, last activity, turn count, git branch, model, and a ready-to-paste resume command, and can re-open all of them at once in new terminal tabs. Use when the user asks "what was I working on", "which projects did I touch recently", "where did I leave off", "list my recent sessions", "how do I get back into that session", "open all my sessions again", or invokes /recap. Reads only local files; the default run is instant and offline.
 license: MIT
 metadata:
-  version: "1.2.0"
+  version: "1.2.1"
   author: noluyorAbi
   source: https://github.com/noluyorAbi/claude-code-recap
 ---

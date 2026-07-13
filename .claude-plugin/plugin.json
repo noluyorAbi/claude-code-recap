@@ -3,7 +3,7 @@
   "name": "claude-code-recap",
   "displayName": "recap",
   "description": "Lists recent Claude Code sessions across every project with summaries, git branch, model, turn count, and a ready-to-paste resume command, and can re-open a whole working set in terminal tabs.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "noluyorAbi",
     "email": "121226886+noluyorAbi@users.noreply.github.com",

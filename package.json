@@ -1,7 +1,7 @@
 {
   "name": "claude-code-recap",
-  "version": "1.2.0",
-  "description": "Installs the recap skill into your Claude Code skills directory: list recent sessions across every project and get a ready-to-paste resume command.",
+  "version": "1.2.1",
+  "description": "Claude Code session manager: list and resume recent Claude Code sessions across every project. Paste-ready resume command, --pick to jump in, --open to reopen tabs. Skill, CLI, and plugin. Offline.",
   "type": "module",
   "bin": {
     "claude-code-recap": "bin/cli.mjs"
@@ -21,19 +21,29 @@
   },
   "keywords": [
     "claude-code",
-    "claude-code-skills",
+    "claude",
+    "anthropic",
     "claude-code-skill",
+    "claude-code-skills",
+    "claude-skills",
     "claude-skill",
     "agent-skills",
-    "agent-skill",
-    "skill-md",
-    "skills",
-    "anthropic",
-    "claude",
-    "session-recap",
+    "claude-code-plugin",
+    "session",
+    "sessions",
+    "session-manager",
+    "session-history",
     "resume",
+    "session-resume",
+    "recap",
+    "cli",
+    "terminal",
+    "iterm2",
     "developer-tools",
-    "cli"
+    "developer-productivity",
+    "agentic-coding",
+    "coding-agent",
+    "local-first"
   ],
   "repository": {
     "type": "git",
