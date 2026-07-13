@@ -268,16 +268,6 @@ Both refuse to delete files you have edited since installing, unless you pass `-
 
 If you installed it as a plugin instead, open the plugin manager with `/plugin` inside Claude Code and disable or remove `claude-code-recap@noluyorabi-plugins` there.
 
-## <img src="assets/icons/clock.svg" width="16" align="center"> Star history
-
-<a href="https://star-history.com/#noluyorAbi/claude-code-recap&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=noluyorAbi/claude-code-recap&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=noluyorAbi/claude-code-recap&type=Date" />
-    <img alt="Star history chart for claude-code-recap" src="https://api.star-history.com/svg?repos=noluyorAbi/claude-code-recap&type=Date" width="640" />
-  </picture>
-</a>
-
 ## Contributing
 
 Issues and pull requests are welcome. The local loop:
