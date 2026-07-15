@@ -28,29 +28,15 @@
 <br>
 
 <a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/v/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=npm&labelColor=0b0b0b&color=d97757" alt="npm version"></a>
-<a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/dm/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=downloads&labelColor=0b0b0b&color=3a3a3a" alt="npm downloads"></a>
-<a href="https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b" alt="ci"></a>
-
-<a href="LICENSE"><img src="https://img.shields.io/github/license/noluyorAbi/claude-code-recap?style=for-the-badge&label=license&labelColor=0b0b0b&color=3a3a3a" alt="license"></a>
 <a href="https://code.claude.com/docs/en/skills"><img src="https://img.shields.io/badge/Claude_Code-skill_%2B_plugin-d97757?style=for-the-badge&logo=claude&logoColor=white&labelColor=0b0b0b" alt="Claude Code skill and plugin"></a>
-<a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3_stdlib-3a3a3a?style=for-the-badge&logo=python&logoColor=white&labelColor=0b0b0b" alt="python 3 stdlib"></a>
-
 <a href="package.json"><img src="https://img.shields.io/badge/dependencies-zero-3a3a3a?style=for-the-badge&labelColor=0b0b0b" alt="zero dependencies"></a>
-<a href="#requirements"><img src="https://img.shields.io/badge/platform-macOS_%7C_Linux-3a3a3a?style=for-the-badge&logo=apple&logoColor=white&labelColor=0b0b0b" alt="platform macOS and Linux"></a>
-<a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-d97757?style=for-the-badge&labelColor=0b0b0b" alt="PRs welcome"></a>
+<a href="https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b" alt="ci"></a>
 
 <br>
 
 <a href="assets/demo.mp4"><img src="assets/demo.gif" alt="recap listing recent Claude Code sessions across several projects, then re-opening them in terminal tabs" width="100%"></a>
 
 <sub>The GIF above is a downsampled loop. Full-quality recording: <a href="assets/demo.mp4"><code>assets/demo.mp4</code></a>.</sub>
-
-<br>
-<br>
-
-<a href="https://github.com/noluyorAbi/claude-code-recap/stargazers"><img src="https://img.shields.io/github/stars/noluyorAbi/claude-code-recap?style=social" alt="GitHub stars"></a>
-&nbsp;
-<a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/dm/claude-code-recap?style=social&logo=npm&label=downloads" alt="npm downloads"></a>
 
 </div>
 
