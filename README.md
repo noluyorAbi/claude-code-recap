@@ -28,6 +28,7 @@
 <br>
 
 <a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/v/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=npm&labelColor=0b0b0b&color=d97757" alt="npm version"></a>
+<a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/dm/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=downloads&labelColor=0b0b0b&color=3a3a3a" alt="npm downloads per month"></a>
 <a href="https://code.claude.com/docs/en/skills"><img src="https://img.shields.io/badge/Claude_Code-skill_%2B_plugin-d97757?style=for-the-badge&logo=claude&logoColor=white&labelColor=0b0b0b" alt="Claude Code skill and plugin"></a>
 <a href="package.json"><img src="https://img.shields.io/badge/dependencies-zero-3a3a3a?style=for-the-badge&labelColor=0b0b0b" alt="zero dependencies"></a>
 <a href="https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b" alt="ci"></a>
