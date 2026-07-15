@@ -64,6 +64,24 @@ FNT = 238     # faint
 ACCENT = 74   # one accent: desaturated cyan-blue (ids, marks)
 TODAY_C = 114     # soft green
 YESTERDAY_C = 179 # soft amber
+STAR_C = 179      # soft amber (star CTA)
+HEART_C = 210     # soft coral (credit)
+
+# Display the bare domain, but point the OSC 8 hyperlink at a UTM-tagged URL
+# (terminal clicks send no HTTP Referer, so query params are the only way to
+# see where visitors come from). Terminals without OSC 8 fall back to the
+# clean visible URL, losing only attribution.
+AUTHOR_URL_DISPLAY = "https://adatepe.dev"
+AUTHOR_URL = AUTHOR_URL_DISPLAY + "/?utm_source=recap&utm_medium=cli"
+REPO_URL = "https://github.com/noluyorAbi/claude-code-recap"
+
+def link(url: str, s: str) -> str:
+    """OSC 8 clickable hyperlink. Only on a real TTY: piped output (Claude
+    Code's Bash tool, files) keeps plain text so nothing leaks as junk; the
+    visible text already carries the domain, so no information is lost."""
+    if not (USE_COLOR and sys.stdout.isatty()):
+        return s
+    return f"\033]8;;{url}\033\\{s}\033]8;;\033\\"
 
 # muted, distinct per-project palette (256-color)
 PROJ_PALETTE = [110, 150, 180, 176, 116, 222, 146, 210, 108, 139]
@@ -446,6 +464,13 @@ def render(sessions, args, day_counts):
     print()
     print(c256(FNT, " turns ≈ user + assistant messages"
                     "   ·   --pick jump in   ·   --open all in tabs   ·   --smart 1-line summaries"))
+    print()
+    print(" " + c256(STAR_C, "*", bold=True) + " " + c256(MUT, "enjoying recap?")
+          + " " + c256(SEC, "a star on GitHub makes my day", bold=True)
+          + c256(FNT, ": ") + link(REPO_URL, c256(ACCENT, REPO_URL)))
+    print(" " + c256(HEART_C, "@", bold=True) + " " + c256(MUT, "made with care by")
+          + " " + c256(SEC, "Alperen", bold=True)
+          + c256(FNT, " · come say hi: ") + link(AUTHOR_URL, c256(ACCENT, AUTHOR_URL_DISPLAY)))
 
 def _shquote_path(path: str) -> str:
     """Shell-quote a path so metacharacters or spaces in a directory name cannot
