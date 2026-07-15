@@ -1,23 +1,64 @@
-# recap
+<div align="center">
 
-**See every recent Claude Code session across every project on your machine, and get the exact command to jump back into any of them.**
+<img src="assets/banner.png" width="100%" alt="recap — get back into every Claude Code session">
 
-Claude Code's built-in `/resume` only lists sessions for the directory you are standing in. After a reboot, a crash, or a week of jumping between five repos, there is no way to answer "what was I working on, and where did I leave off". `recap` answers that in one command, and can re-open a whole working set in terminal tabs.
+<b>See every recent Claude Code session across every project on your machine, and get the exact command to jump back into any of them.</b>
 
-[![npm version](https://img.shields.io/npm/v/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=npm&labelColor=0b0b0b&color=d97757)](https://www.npmjs.com/package/claude-code-recap)
-[![npm downloads](https://img.shields.io/npm/dm/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=downloads&labelColor=0b0b0b&color=3a3a3a)](https://www.npmjs.com/package/claude-code-recap)
-[![ci](https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b)](https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml)
-[![license](https://img.shields.io/github/license/noluyorAbi/claude-code-recap?style=for-the-badge&label=license&labelColor=0b0b0b&color=3a3a3a)](LICENSE)
+<br>
+<br>
 
-[![Claude Code](https://img.shields.io/badge/Claude_Code-skill_%2B_plugin-d97757?style=for-the-badge&logo=claude&logoColor=white&labelColor=0b0b0b)](https://code.claude.com/docs/en/skills)
-[![python](https://img.shields.io/badge/python-3_stdlib-3a3a3a?style=for-the-badge&logo=python&logoColor=white&labelColor=0b0b0b)](https://www.python.org/)
-[![dependencies](https://img.shields.io/badge/dependencies-zero-3a3a3a?style=for-the-badge&labelColor=0b0b0b)](package.json)
-[![platform](https://img.shields.io/badge/platform-macOS_%7C_Linux-3a3a3a?style=for-the-badge&logo=apple&logoColor=white&labelColor=0b0b0b)](#requirements)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-d97757?style=for-the-badge&labelColor=0b0b0b)](#contributing)
+<a href="https://github.com/noluyorAbi/claude-code-recap/stargazers">
+  <img src="https://img.shields.io/badge/%E2%98%85%20Star%20this%20repo-0b0b0b?style=for-the-badge&logo=github&logoColor=white&labelColor=0b0b0b" height="54" alt="Star claude-code-recap on GitHub">
+</a>
+&nbsp;&nbsp;
+<a href="https://www.npmjs.com/package/claude-code-recap">
+  <img src="https://img.shields.io/badge/Install-npx%20claude--code--recap-d97757?style=for-the-badge&logo=npm&logoColor=white&labelColor=0b0b0b" height="54" alt="Install via npx">
+</a>
+&nbsp;&nbsp;
+<a href="https://www.adatepe.dev/blog/resume-claude-code-sessions-across-projects">
+  <img src="https://img.shields.io/badge/Read%20the%20write--up-adatepe.dev-3a3a3a?style=for-the-badge&logo=readme&logoColor=white&labelColor=0b0b0b" height="54" alt="Read the write-up on adatepe.dev">
+</a>
+
+<br>
+<br>
+
+<code>npx claude-code-recap</code>&nbsp;&nbsp;then&nbsp;&nbsp;<code>/recap</code>
+
+<br>
+<br>
+
+<a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/v/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=npm&labelColor=0b0b0b&color=d97757" alt="npm version"></a>
+<a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/dm/claude-code-recap?style=for-the-badge&logo=npm&logoColor=white&label=downloads&labelColor=0b0b0b&color=3a3a3a" alt="npm downloads"></a>
+<a href="https://github.com/noluyorAbi/claude-code-recap/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/noluyorAbi/claude-code-recap/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=ci&labelColor=0b0b0b" alt="ci"></a>
+
+<a href="LICENSE"><img src="https://img.shields.io/github/license/noluyorAbi/claude-code-recap?style=for-the-badge&label=license&labelColor=0b0b0b&color=3a3a3a" alt="license"></a>
+<a href="https://code.claude.com/docs/en/skills"><img src="https://img.shields.io/badge/Claude_Code-skill_%2B_plugin-d97757?style=for-the-badge&logo=claude&logoColor=white&labelColor=0b0b0b" alt="Claude Code skill and plugin"></a>
+<a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3_stdlib-3a3a3a?style=for-the-badge&logo=python&logoColor=white&labelColor=0b0b0b" alt="python 3 stdlib"></a>
+
+<a href="package.json"><img src="https://img.shields.io/badge/dependencies-zero-3a3a3a?style=for-the-badge&labelColor=0b0b0b" alt="zero dependencies"></a>
+<a href="#requirements"><img src="https://img.shields.io/badge/platform-macOS_%7C_Linux-3a3a3a?style=for-the-badge&logo=apple&logoColor=white&labelColor=0b0b0b" alt="platform macOS and Linux"></a>
+<a href="#contributing"><img src="https://img.shields.io/badge/PRs-welcome-d97757?style=for-the-badge&labelColor=0b0b0b" alt="PRs welcome"></a>
+
+<br>
 
 <a href="assets/demo.mp4"><img src="assets/demo.gif" alt="recap listing recent Claude Code sessions across several projects, then re-opening them in terminal tabs" width="100%"></a>
 
-The GIF above is a downsampled loop. The full-quality recording is [`assets/demo.mp4`](assets/demo.mp4).
+<sub>The GIF above is a downsampled loop. Full-quality recording: <a href="assets/demo.mp4"><code>assets/demo.mp4</code></a>.</sub>
+
+<br>
+<br>
+
+<a href="https://github.com/noluyorAbi/claude-code-recap/stargazers"><img src="https://img.shields.io/github/stars/noluyorAbi/claude-code-recap?style=social" alt="GitHub stars"></a>
+&nbsp;
+<a href="https://www.npmjs.com/package/claude-code-recap"><img src="https://img.shields.io/npm/dm/claude-code-recap?style=social&logo=npm&label=downloads" alt="npm downloads"></a>
+
+</div>
+
+<br>
+
+Claude Code's built-in `/resume` only lists sessions for the directory you are standing in. After a reboot, a crash, or a week of jumping between five repos, there is no way to answer "what was I working on, and where did I leave off". `recap` answers that in one command, and can re-open a whole working set in terminal tabs.
+
+> The full story behind `recap`, why it reads exactly two files and writes nothing, the `shlex.quote` safety in `--open`, and the zero-dependency stance: [**Resume Claude Code Sessions Across Every Project**](https://www.adatepe.dev/blog/resume-claude-code-sessions-across-projects) on adatepe.dev.
 
 ---
 
