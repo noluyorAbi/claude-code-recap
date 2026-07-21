@@ -222,9 +222,10 @@ def project_prefilter(needle: str, transcript_file: str, hint) -> bool:
     """
     if not hint:  # same falsy test resolve_project_path applies to its fallback
         return True
-    folder = os.path.basename(os.path.dirname(transcript_file)).lower()
-    return (encode_project_dir(needle).lower() in folder
-            or matches_project(needle, hint))
+    folder = os.path.basename(os.path.dirname(transcript_file))
+    # the folder name is already in the encoded alphabet, so matches_project
+    # compares it unchanged: one rule decides both here and on the real path
+    return matches_project(needle, folder) or matches_project(needle, hint)
 
 def resolve_project_path(transcript_file: str, cwds, hint=None):
     """Pick the cwd a session can actually be resumed from.

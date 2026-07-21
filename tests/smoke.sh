@@ -22,10 +22,16 @@ fail() {
   exit 1
 }
 
+# Claude Code names a project folder after its cwd with every non-alphanumeric
+# character replaced by '-'. One helper, so no fixture invents its own rule.
+enc_dir() {
+  printf '%s' "-$(printf '%s' "${1#/}" | tr -c 'A-Za-z0-9\n' '-')"
+}
+
 SID="11111111-2222-3333-4444-555555555555"
 PROJECT="$TMP/workspace/demo-project"
 CONFIG="$TMP/claude"
-ENC="-$(printf '%s' "${PROJECT#/}" | tr '/.' '--')"
+ENC="$(enc_dir "$PROJECT")"
 
 mkdir -p "$PROJECT" "$CONFIG/projects/$ENC"
 
@@ -128,7 +134,7 @@ SID2="66666666-7777-8888-9999-000000000000"
 SID3="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 CONFIG2="$TMP/claude2"
 PROJECT2="$TMP/workspace/drift_project"
-ENC2="-$(printf '%s' "${PROJECT2#/}" | tr -c 'A-Za-z0-9\n' '-')"
+ENC2="$(enc_dir "$PROJECT2")"
 
 mkdir -p "$PROJECT2/subdir" "$CONFIG2/projects/$ENC2"
 
@@ -223,7 +229,7 @@ printf 'smoke: ok: --project matches the project directory in every spelling\n'
 # candidates: otherwise a wall of stale entries starves --limit.
 CONFIG3="$TMP/claude3"
 TARGET="$TMP/workspace/target_project"
-ENC3="-$(printf '%s' "${TARGET#/}" | tr -c 'A-Za-z0-9\n' '-')"
+ENC3="$(enc_dir "$TARGET")"
 mkdir -p "$TARGET" "$CONFIG3/projects/$ENC3"
 
 python3 - "$CONFIG3" "$ENC3" "$TARGET" "$TMP/workspace" "$NOW_ISO" <<'PY'
@@ -298,7 +304,7 @@ PY
 # happen before the budget is spent, exactly like the --project one.
 CONFIG4="$TMP/claude4"
 RECENT="$TMP/workspace/recent_project"
-ENC4="-$(printf '%s' "${RECENT#/}" | tr -c 'A-Za-z0-9\n' '-')"
+ENC4="$(enc_dir "$RECENT")"
 mkdir -p "$RECENT" "$CONFIG4/projects/$ENC4"
 
 python3 - "$CONFIG4" "$ENC4" "$RECENT" "$NOW_ISO" <<'PY'
@@ -353,8 +359,8 @@ CONFIG5="$TMP/claude5"
 MOVED="$TMP/workspace/moved_project"
 HINTED="$TMP/workspace/hinted_project"
 OWN="$TMP/workspace/own_project"
-ENC_MOVED="-$(printf '%s' "${MOVED#/}" | tr -c 'A-Za-z0-9\n' '-')"
-ENC_OWN="-$(printf '%s' "${OWN#/}" | tr -c 'A-Za-z0-9\n' '-')"
+ENC_MOVED="$(enc_dir "$MOVED")"
+ENC_OWN="$(enc_dir "$OWN")"
 mkdir -p "$CONFIG5/projects/$ENC_MOVED" "$CONFIG5/projects/$ENC_OWN"
 
 SID_MOVED="88888888-0000-0000-0000-000000000001"
@@ -427,5 +433,30 @@ if ids != [sys.argv[2]]:
     raise SystemExit(1)
 print("smoke: ok: --project reaches a session whose history entry points elsewhere")
 PY
+
+# ---------- 9. the same invariant, over every fixture in this file ----------
+# recap rejects most candidates before parsing them, using only the folder name
+# and the history entry. That shortcut is safe exactly while it cannot hide a
+# session the full check would keep, so assert it directly: whatever path a
+# session is listed with, --project on that path has to find it again. Any new
+# way of resolving a path has to survive this, not just the shapes above.
+for CFG in "$CONFIG" "$CONFIG2" "$CONFIG3" "$CONFIG4" "$CONFIG5"; do
+  CLAUDE_CONFIG_DIR="$CFG" python3 "$RECAP" --json --limit 40 >"$TMP/listed.json" ||
+    fail "recap.py --json exited nonzero for $CFG"
+  python3 - "$TMP/listed.json" >"$TMP/listed.tsv" <<'PY'
+import json, sys
+for s in json.load(open(sys.argv[1], encoding="utf-8")):
+    print(f"{s['sessionId']}\t{s['projectPath']}")
+PY
+  while IFS="$(printf '\t')" read -r LISTED_SID LISTED_PATH; do
+    [ -n "$LISTED_SID" ] || continue
+    CLAUDE_CONFIG_DIR="$CFG" python3 "$RECAP" --json --project "$LISTED_PATH" \
+      --limit 40 >"$TMP/found.json" ||
+      fail "recap.py --project '$LISTED_PATH' exited nonzero"
+    grep -q "$LISTED_SID" "$TMP/found.json" ||
+      fail "session $LISTED_SID is listed under $LISTED_PATH but --project on that path drops it"
+  done <"$TMP/listed.tsv"
+done
+printf 'smoke: ok: every listed session is reachable by its own project path\n'
 
 printf '\nsmoke: PASS\n'
