@@ -256,7 +256,7 @@ Claude Code already logs your sessions to disk. `recap` is a reader for those lo
 
 **Summaries.** Preference order: Claude Code's own `ai-title` line, then the first real user prompt of the session, then `(no prompt)`. Slash commands, system reminders and tool results are not treated as prompts. `--smart` replaces this with a real one-sentence summary.
 
-**Project paths** always come from the `cwd` and `project` fields in the logs, never decoded back from the directory-name encoding, which is lossy.
+**Project paths** always come from the `cwd` and `project` fields in the logs, never decoded back from the directory-name encoding, which is lossy. A session is resumable only from the directory it started in, so when a conversation `cd`s somewhere else mid-session, recap keeps the starting directory: it picks the first recorded `cwd` whose encoding matches the transcript's own folder, and falls back to a sibling transcript when a session records no `cwd` at all.
 
 **Turn count** is user prompts plus distinct assistant messages, grouped by message id so streaming chunks are not counted twice. It is labeled approximate because it is.
 

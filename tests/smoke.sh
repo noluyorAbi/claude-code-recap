@@ -118,4 +118,99 @@ grep -q "claude -r $SID" "$TMP/dry.txt" ||
   fail "--open --dry-run did not print the resume command"
 printf 'smoke: ok: --open --dry-run is side-effect free\n'
 
+# ---------- 5. a mid-conversation `cd` must not hijack the resume path ----------
+# A transcript lives in the folder encoding the cwd the session STARTED in, and
+# `claude -r` only finds it from there. If the conversation cd's into a subdir,
+# the later `cwd` fields point at that subdir; resuming from it fails. A second
+# session in the same folder is a title-only stub with no cwd at all, so its
+# path has to be recovered from a sibling transcript.
+SID2="66666666-7777-8888-9999-000000000000"
+SID3="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+CONFIG2="$TMP/claude2"
+PROJECT2="$TMP/workspace/drift_project"
+ENC2="-$(printf '%s' "${PROJECT2#/}" | tr -c 'A-Za-z0-9\n' '-')"
+
+mkdir -p "$PROJECT2/subdir" "$CONFIG2/projects/$ENC2"
+
+python3 - "$CONFIG2" "$ENC2" "$SID2" "$SID3" "$PROJECT2" "$NOW_ISO" <<'PY'
+import json, os, sys
+
+config, enc, sid, sid_stub, project, now_iso = sys.argv[1:7]
+drifted = os.path.join(project, "subdir")
+
+with open(os.path.join(config, "history.jsonl"), "w", encoding="utf-8") as fh:
+    pass  # no history entry: the path must come from the transcript alone
+
+with open(os.path.join(config, "projects", enc, sid + ".jsonl"), "w",
+          encoding="utf-8") as fh:
+    for row in [
+        {"type": "user", "cwd": project, "timestamp": now_iso, "sessionId": sid,
+         "message": {"role": "user", "content": "start here"}},
+        # the conversation cd's away halfway through
+        {"type": "user", "cwd": drifted, "timestamp": now_iso, "sessionId": sid,
+         "message": {"role": "user", "content": "now work in the subdir"}},
+        {"type": "ai-title", "timestamp": now_iso, "aiTitle": "Drifted cwd session"},
+    ]:
+        fh.write(json.dumps(row) + "\n")
+
+# title-only stub: no cwd anywhere in the file
+with open(os.path.join(config, "projects", enc, sid_stub + ".jsonl"), "w",
+          encoding="utf-8") as fh:
+    fh.write(json.dumps({"type": "ai-title", "aiTitle": "Stub with no cwd",
+                         "sessionId": sid_stub}) + "\n")
+PY
+
+CLAUDE_CONFIG_DIR="$CONFIG2" python3 "$RECAP" --json --limit 5 >"$TMP/drift.json" ||
+  fail "recap.py --json exited nonzero on the drifted-cwd config"
+
+python3 - "$TMP/drift.json" "$SID2" "$SID3" "$PROJECT2" <<'PY' || exit 1
+import json, sys
+
+out, sid, sid_stub, project = sys.argv[1:5]
+data = json.load(open(out, encoding="utf-8"))
+by_id = {s["sessionId"]: s for s in data}
+
+def check(cond, msg):
+    if not cond:
+        print(f"smoke: FAIL: {msg}", file=sys.stderr)
+        print(json.dumps(data, indent=2), file=sys.stderr)
+        raise SystemExit(1)
+
+check(sid in by_id, "drifted session missing from output")
+check(by_id[sid]["projectPath"] == project,
+      f"a mid-conversation cd hijacked the path: {by_id[sid]['projectPath']}")
+check(by_id[sid]["resume"] == f"cd {project} && claude -r {sid}",
+      f"wrong resume command: {by_id[sid]['resume']}")
+check(sid_stub in by_id, "cwd-less stub session missing from output")
+check(by_id[sid_stub]["projectPath"] == project,
+      f"stub path not recovered from a sibling: {by_id[sid_stub]['projectPath']}")
+print("smoke: ok: resume path survives a mid-conversation cd")
+PY
+
+# the drifted subdir must not match --project either: no session started there
+CLAUDE_CONFIG_DIR="$CONFIG2" python3 "$RECAP" --json --project subdir >"$TMP/subdir.json" ||
+  fail "recap.py --project exited nonzero"
+python3 - "$TMP/subdir.json" <<'PY' || exit 1
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+if data:
+    print("smoke: FAIL: --project matched a directory no session started in",
+          file=sys.stderr)
+    raise SystemExit(1)
+print("smoke: ok: --project filters on the resolved path")
+PY
+
+# --project must still match a path whose separators the folder name collapsed
+CLAUDE_CONFIG_DIR="$CONFIG2" python3 "$RECAP" --json --project drift_project >"$TMP/named.json" ||
+  fail "recap.py --project exited nonzero"
+python3 - "$TMP/named.json" <<'PY' || exit 1
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+if len(data) != 2:
+    print(f"smoke: FAIL: --project drift_project matched {len(data)} sessions, expected 2",
+          file=sys.stderr)
+    raise SystemExit(1)
+print("smoke: ok: --project matches the real project directory")
+PY
+
 printf '\nsmoke: PASS\n'

@@ -191,6 +191,63 @@ def load_history():
                 e["project"] = o.get("project")
     return idx
 
+def encode_project_dir(path: str) -> str:
+    """Claude Code's ~/.claude/projects folder name for a given cwd.
+
+    Every non-alphanumeric character becomes '-' (so '/', '.', '_' and spaces
+    all collapse to dashes). Lossy, which is why we never decode it: we encode
+    candidate cwds and compare against the folder instead.
+    """
+    return re.sub(r"[^A-Za-z0-9]", "-", path)
+
+def resolve_project_path(transcript_file: str, candidates):
+    """Pick the cwd a session can actually be resumed from.
+
+    A session's transcript lives in the folder encoding the cwd it STARTED in.
+    If the conversation later `cd`s elsewhere, later `cwd` fields point at the
+    new directory and `claude -r <id>` run there finds no conversation. So the
+    first candidate whose encoding matches the containing folder wins.
+    """
+    folder = os.path.basename(os.path.dirname(transcript_file))
+    for cand in candidates:
+        if cand and encode_project_dir(cand) == folder:
+            return cand
+    sibling = _folder_cwd(os.path.dirname(transcript_file))
+    if sibling:
+        return sibling
+    for cand in candidates:
+        if cand:
+            return cand
+    return None
+
+_FOLDER_CWD = {}
+
+def _folder_cwd(folder_dir: str, max_files: int = 5):
+    """Recover a folder's real cwd from a sibling transcript.
+
+    Some transcripts (title-only stubs) carry no cwd at all. Siblings in the
+    same folder started in the same directory, so borrow theirs.
+    """
+    if folder_dir in _FOLDER_CWD:
+        return _FOLDER_CWD[folder_dir]
+    folder = os.path.basename(folder_dir)
+    found = None
+    try:
+        names = sorted(os.listdir(folder_dir))
+    except OSError:
+        names = []
+    checked = 0
+    for name in names:
+        if not name.endswith(".jsonl") or checked >= max_files:
+            continue
+        checked += 1
+        cand = peek_cwd(os.path.join(folder_dir, name))
+        if cand and encode_project_dir(cand) == folder:
+            found = cand
+            break
+    _FOLDER_CWD[folder_dir] = found
+    return found
+
 def peek_cwd(path: str, max_lines: int = 80):
     """Cheaply pull cwd from the first lines of a transcript."""
     try:
@@ -213,7 +270,7 @@ def peek_cwd(path: str, max_lines: int = 80):
 def parse_session(path: str):
     """Full parse of one transcript. Returns dict or None if unusable."""
     d = {
-        "cwd": None, "ai_title": None, "first_prompt": None,
+        "cwd": None, "cwds": [], "ai_title": None, "first_prompt": None,
         "git_branch": None, "model": None, "last_ts": None,
         "user_turns": 0, "assistant_ids": set(),
     }
@@ -236,7 +293,10 @@ def parse_session(path: str):
             any_line = True
             t = o.get("type")
             if o.get("cwd"):
-                d["cwd"] = o["cwd"]
+                if d["cwd"] is None:
+                    d["cwd"] = o["cwd"]  # first cwd = where the session started
+                if o["cwd"] not in d["cwds"]:
+                    d["cwds"].append(o["cwd"])
             if o.get("gitBranch"):
                 d["git_branch"] = o["gitBranch"]
             ts = iso_to_dt(o.get("timestamp")) if isinstance(o.get("timestamp"), str) else None
@@ -343,8 +403,14 @@ def collect(args):
             break  # mtime >= internal ts, so sorted-desc break is safe
         h = hist.get(sid)
         path = (h and h.get("project")) or peek_cwd(f)
-        if needle and (not path or needle not in path.lower()):
-            continue
+        if needle:
+            # loose pre-filter: the real project dir is whatever the containing
+            # folder encodes, so match the needle against that too (normalized,
+            # since the folder has every separator collapsed to '-').
+            folder = os.path.basename(os.path.dirname(f)).lower()
+            if (needle not in (path or "").lower()
+                    and encode_project_dir(needle).lower() not in folder):
+                continue
         rows.append({"sid": sid, "file": f, "mtime": mtime, "path": path, "hist": h})
         if len(rows) >= fetch:
             break
@@ -359,7 +425,11 @@ def collect(args):
         if d is None:
             continue
         h = r["hist"] or {}
-        path = d["cwd"] or r["path"] or UNKNOWN_PATH
+        # resume dir, not last-seen dir: a mid-conversation `cd` must not win
+        path = (resolve_project_path(r["file"], d["cwds"] + [r["path"]])
+                or UNKNOWN_PATH)
+        if needle and needle not in path.lower():
+            continue  # exact filter on the resolved path
         last = d["last_ts"] or h.get("last_ts") or r["mtime"]
         summary = (d["ai_title"] or h.get("first_prompt") or d["first_prompt"]
                    or "(no prompt)")

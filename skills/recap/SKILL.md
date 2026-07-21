@@ -88,7 +88,7 @@ Use `--open` only when the user explicitly asks to re-open or resume the session
 ## Data sources and guarantees
 
 - `~/.claude/history.jsonl` is the fast index (prompt text, timestamp, project path, session id). `CLAUDE_CONFIG_DIR` is honored when set.
-- `~/.claude/projects/<encoded>/<session>.jsonl` transcripts are parsed only for the displayed rows (title, branch, model, turn count). Project paths always come from the `cwd`/`project` fields, never decoded from folder names (that encoding is lossy).
+- `~/.claude/projects/<encoded>/<session>.jsonl` transcripts are parsed only for the displayed rows (title, branch, model, turn count). Project paths always come from the `cwd`/`project` fields, never decoded from folder names (that encoding is lossy). Because `claude -r` only finds a session from the directory it started in, recap resolves the path to the first recorded `cwd` whose encoding matches the transcript's folder, so a mid-session `cd` never produces an unresumable command; a session with no `cwd` at all borrows one from a sibling transcript.
 - Summary preference: Claude Code's own `ai-title` line, else the first real user prompt, else `(no prompt)`.
 - `--smart` privacy: the only path that leaves the machine. It shells out to the local `claude` CLI once and sends, for the listed sessions only, each session's 8-character id prefix, its title (first 150 characters), and its first user prompt (first 300 characters). No file bodies, no transcript contents, no other sessions. If `claude` is not on PATH, `--smart` is skipped with a warning and the offline summaries are used.
 - Turn count groups assistant streaming chunks by message id and is labeled approximate.
