@@ -213,4 +213,89 @@ if len(data) != 2:
 print("smoke: ok: --project matches the real project directory")
 PY
 
+# every spelling of the same directory selects it: real separators, and the
+# dashed form users read off the ~/.claude/projects folder name
+for NEEDLE in drift-project workspace/drift_project; do
+  CLAUDE_CONFIG_DIR="$CONFIG2" python3 "$RECAP" --json --project "$NEEDLE" >"$TMP/spelling.json" ||
+    fail "recap.py --project $NEEDLE exited nonzero"
+  python3 - "$TMP/spelling.json" "$NEEDLE" <<'PY' || exit 1
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+if len(data) != 2:
+    print(f"smoke: FAIL: --project {sys.argv[2]} matched {len(data)} sessions, expected 2",
+          file=sys.stderr)
+    raise SystemExit(1)
+PY
+done
+printf 'smoke: ok: --project accepts encoded and path spellings alike\n'
+
+# ---------- 6. a rejected candidate must not eat the row budget ----------
+# recap over-fetches `limit * 2 + 5` candidates. Sessions whose history entry
+# points at a stale directory pass the cheap pre-filter and are dropped once
+# the real path is resolved, so the budget has to count kept rows, not
+# candidates: otherwise a wall of stale entries starves --limit.
+CONFIG3="$TMP/claude3"
+TARGET="$TMP/workspace/target_project"
+ENC3="-$(printf '%s' "${TARGET#/}" | tr -c 'A-Za-z0-9\n' '-')"
+mkdir -p "$TARGET" "$CONFIG3/projects/$ENC3"
+
+python3 - "$CONFIG3" "$ENC3" "$TARGET" "$TMP/workspace" "$NOW_ISO" <<'PY'
+import json, os, sys
+
+config, enc, target, workspace, now_iso = sys.argv[1:6]
+import re
+encode = lambda p: re.sub(r"[^A-Za-z0-9]", "-", p)
+
+def write(path, rows):
+    with open(path, "w", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row) + "\n")
+
+hist = []
+# 3 genuine matches first, so the decoys below get the newer mtimes
+for i in range(3):
+    sid = f"cccccccc-0000-0000-0000-00000000000{i}"
+    write(os.path.join(config, "projects", enc, sid + ".jsonl"), [
+        {"type": "user", "cwd": target, "timestamp": now_iso, "sessionId": sid,
+         "message": {"role": "user", "content": f"real session {i}"}},
+        {"type": "ai-title", "aiTitle": f"Target session {i}"},
+    ])
+
+# 12 decoys: their history entry still claims the target directory (a stale
+# path, e.g. after the folder was renamed), their transcript says otherwise
+for i in range(12):
+    sid = f"dddddddd-0000-0000-0000-0000000000{i:02d}"
+    decoy = os.path.join(workspace, f"decoy{i}")
+    os.makedirs(os.path.join(config, "projects", encode(decoy)), exist_ok=True)
+    write(os.path.join(config, "projects", encode(decoy), sid + ".jsonl"), [
+        {"type": "user", "cwd": decoy, "timestamp": now_iso, "sessionId": sid,
+         "message": {"role": "user", "content": f"decoy {i}"}},
+        {"type": "ai-title", "aiTitle": f"Decoy session {i}"},
+    ])
+    hist.append({"display": f"decoy {i}", "timestamp": 0,
+                 "project": target, "sessionId": sid})
+
+with open(os.path.join(config, "history.jsonl"), "w", encoding="utf-8") as fh:
+    for row in hist:
+        fh.write(json.dumps(row) + "\n")
+PY
+
+CLAUDE_CONFIG_DIR="$CONFIG3" python3 "$RECAP" --json --project target_project --limit 3 \
+  >"$TMP/budget.json" || fail "recap.py --project (budget case) exited nonzero"
+python3 - "$TMP/budget.json" "$TARGET" <<'PY' || exit 1
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+target = sys.argv[2]
+if len(data) != 3:
+    print(f"smoke: FAIL: expected 3 matching sessions, got {len(data)}: "
+          "rejected candidates ate the over-fetch budget", file=sys.stderr)
+    raise SystemExit(1)
+wrong = [s["projectPath"] for s in data if s["projectPath"] != target]
+if wrong:
+    print(f"smoke: FAIL: stale history paths leaked into the result: {wrong}",
+          file=sys.stderr)
+    raise SystemExit(1)
+print("smoke: ok: filtered-out candidates do not starve --limit")
+PY
+
 printf '\nsmoke: PASS\n'

@@ -200,6 +200,28 @@ def encode_project_dir(path: str) -> str:
     """
     return re.sub(r"[^A-Za-z0-9]", "-", path)
 
+def matches_project(needle: str, path: str) -> bool:
+    """The single definition of what `--project NEEDLE` selects.
+
+    Both sides are compared in the folder encoding, which maps each character
+    independently and therefore preserves substrings. So `--project my_app`,
+    `--project my-app` and `--project work/my_app` all select /work/my_app,
+    whichever spelling the user copied (real path or projects-folder name).
+    """
+    return encode_project_dir(needle).lower() in encode_project_dir(path).lower()
+
+def project_prefilter(needle: str, transcript_file: str, hint) -> bool:
+    """Cheap superset of matches_project, decided before the full parse.
+
+    A session resolves either to a cwd encoding to its containing folder or,
+    failing that, to `hint`. Testing the needle against both means this can
+    over-accept (the exact check runs again on the resolved path) but never
+    rejects a session the exact check would have kept.
+    """
+    enc = encode_project_dir(needle).lower()
+    folder = os.path.basename(os.path.dirname(transcript_file)).lower()
+    return enc in folder or (hint is not None and matches_project(needle, hint))
+
 def resolve_project_path(transcript_file: str, candidates):
     """Pick the cwd a session can actually be resumed from.
 
@@ -270,7 +292,7 @@ def peek_cwd(path: str, max_lines: int = 80):
 def parse_session(path: str):
     """Full parse of one transcript. Returns dict or None if unusable."""
     d = {
-        "cwd": None, "cwds": [], "ai_title": None, "first_prompt": None,
+        "cwds": [], "ai_title": None, "first_prompt": None,
         "git_branch": None, "model": None, "last_ts": None,
         "user_turns": 0, "assistant_ids": set(),
     }
@@ -292,11 +314,8 @@ def parse_session(path: str):
                 continue  # valid JSON but not an object (array, number, ...): skip
             any_line = True
             t = o.get("type")
-            if o.get("cwd"):
-                if d["cwd"] is None:
-                    d["cwd"] = o["cwd"]  # first cwd = where the session started
-                if o["cwd"] not in d["cwds"]:
-                    d["cwds"].append(o["cwd"])
+            if o.get("cwd") and o["cwd"] not in d["cwds"]:
+                d["cwds"].append(o["cwd"])  # in order; cwds[0] is where it started
             if o.get("gitBranch"):
                 d["git_branch"] = o["gitBranch"]
             ts = iso_to_dt(o.get("timestamp")) if isinstance(o.get("timestamp"), str) else None
@@ -397,48 +416,36 @@ def collect(args):
     # touches transcripts on compaction/title writes), so the mtime order is only
     # approximate. Parse extra candidates, then sort by true internal timestamp.
     fetch = args.limit * 2 + 5
-    rows = []
+    out = []
     for mtime, sid, f in cand:
         if cutoff and mtime < cutoff:
             break  # mtime >= internal ts, so sorted-desc break is safe
-        h = hist.get(sid)
-        path = (h and h.get("project")) or peek_cwd(f)
-        if needle:
-            # loose pre-filter: the real project dir is whatever the containing
-            # folder encodes, so match the needle against that too (normalized,
-            # since the folder has every separator collapsed to '-').
-            folder = os.path.basename(os.path.dirname(f)).lower()
-            if (needle not in (path or "").lower()
-                    and encode_project_dir(needle).lower() not in folder):
-                continue
-        rows.append({"sid": sid, "file": f, "mtime": mtime, "path": path, "hist": h})
-        if len(rows) >= fetch:
-            break
-
-    out = []
-    for r in rows:
+        h = hist.get(sid) or {}
+        hint = h.get("project") or peek_cwd(f)
+        if needle and not project_prefilter(needle, f, hint):
+            continue  # cheap reject: skip the full parse of an unwanted session
         try:
-            d = parse_session(r["file"])
+            d = parse_session(f)
         except Exception:
             # A single corrupt transcript must never abort the whole run.
             continue
         if d is None:
             continue
-        h = r["hist"] or {}
         # resume dir, not last-seen dir: a mid-conversation `cd` must not win
-        path = (resolve_project_path(r["file"], d["cwds"] + [r["path"]])
-                or UNKNOWN_PATH)
-        if needle and needle not in path.lower():
-            continue  # exact filter on the resolved path
-        last = d["last_ts"] or h.get("last_ts") or r["mtime"]
+        path = resolve_project_path(f, d["cwds"] + [hint]) or UNKNOWN_PATH
+        if needle and not matches_project(needle, path):
+            continue
+        last = d["last_ts"] or h.get("last_ts") or mtime
         summary = (d["ai_title"] or h.get("first_prompt") or d["first_prompt"]
                    or "(no prompt)")
         out.append({
-            "sid": r["sid"], "path": path, "last": last,
+            "sid": sid, "path": path, "last": last,
             "summary": summary, "turns": d["turns"],
             "branch": d["git_branch"] or "", "model": pretty_model(d["model"] or ""),
             "ai_title": d["ai_title"], "first_prompt": d["first_prompt"] or h.get("first_prompt"),
         })
+        if len(out) >= fetch:
+            break  # counts kept rows, so a filter never starves the limit
     if cutoff:
         out = [s for s in out if s["last"] >= cutoff]
     out.sort(key=lambda s: s["last"], reverse=True)

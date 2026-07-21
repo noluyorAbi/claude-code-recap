@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resume commands for sessions that `cd` mid-conversation. A transcript lives in the folder encoding the directory the session started in, and `claude -r <id>` only finds it from there, but recap reported the last `cwd` seen in the transcript, so those resume commands failed with "No conversation found with session ID". The path is now the first recorded `cwd` whose encoding matches the transcript's own folder.
 - Sessions whose transcript records no `cwd` at all (title-only stubs) no longer show `(unknown path)`; the directory is recovered from a sibling transcript in the same folder.
-- `--project` now filters on the same resolved path it displays, instead of matching a drifted directory the session cannot be resumed from. The needle also matches project directories whose separators the folder encoding collapsed (`--project my_app`).
+- `--project` now filters on the same resolved path it displays, instead of matching a drifted directory the session cannot be resumed from.
+- `--project` matching is one rule again, applied in the folder encoding, so every spelling of the same directory selects it: `--project my_app`, `--project my-app` (the form printed in `~/.claude/projects`) and `--project work/my_app` are equivalent.
+- `--limit` is no longer starved by filtered-out sessions: the internal over-fetch counts the rows it keeps, not the candidates it inspected, so a wall of stale history entries can no longer push real matches out of the result.
 
 ## [1.2.1] - 2026-07-13
 

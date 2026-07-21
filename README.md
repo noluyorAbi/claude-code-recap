@@ -166,7 +166,7 @@ In a real terminal this is colored: a day-grouped timeline (Today green, Yesterd
 | Flag | Default | What it does |
 |------|---------|--------------|
 | `--since SPEC` | off | only sessions active within the window: `30m`, `24h`, `7d`, `2w` |
-| `--project SUBSTR` | off | only sessions whose absolute project path contains `SUBSTR` |
+| `--project SUBSTR` | off | only sessions whose absolute project path contains `SUBSTR` (separators are interchangeable, so `my_app`, `my-app` and `work/my_app` all match `/work/my_app`) |
 | `--limit N` | `15` | maximum number of sessions listed |
 | `--json` | off | machine-readable output with full session ids and resume commands |
 | `--smart` | off | replace summaries with real one-sentence descriptions, via ONE `claude -p` call (network) |

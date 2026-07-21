@@ -32,7 +32,7 @@ Nothing to install beyond Python 3 (stdlib only, no third-party packages).
 |------|---------|
 | (none) | last 15 sessions, newest first, instant, no network |
 | `--since 7d` | only sessions active in the window (`30m`, `24h`, `7d`, `2w`) |
-| `--project foo` | filter by substring of the absolute project path |
+| `--project foo` | filter by substring of the absolute project path; separators are interchangeable (`my_app`, `my-app`, `work/my_app`) |
 | `--limit N` | max rows (default 15) |
 | `--json` | machine-readable output with full session ids and resume commands |
 | `--smart` | real one-sentence summaries via ONE `claude -p` haiku call (network, ~10s) |
