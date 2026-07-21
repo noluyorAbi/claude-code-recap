@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sessions whose transcript records no `cwd` at all (title-only stubs) no longer show `(unknown path)`; the directory is recovered from a sibling transcript in the same folder.
 - `--project` now filters on the same resolved path it displays, instead of matching a drifted directory the session cannot be resumed from.
 - `--project` matching is one rule again, applied in the folder encoding, so every spelling of the same directory selects it: `--project my_app`, `--project my-app` (the form printed in `~/.claude/projects`) and `--project work/my_app` are equivalent.
-- `--limit` is no longer starved by filtered-out sessions: the internal over-fetch counts the rows it keeps, not the candidates it inspected, so a wall of stale history entries can no longer push real matches out of the result.
+- `--limit` is no longer starved by filtered-out sessions: the internal over-fetch counts the rows it keeps, not the candidates it inspected. Both filters are inside that budget now, so neither a wall of stale history entries (`--project`) nor a run of transcripts that were touched but not talked in (`--since`) can push real matches out of the result.
 
 ## [1.2.1] - 2026-07-13
 

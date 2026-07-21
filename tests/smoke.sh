@@ -200,22 +200,9 @@ if data:
 print("smoke: ok: --project filters on the resolved path")
 PY
 
-# --project must still match a path whose separators the folder name collapsed
-CLAUDE_CONFIG_DIR="$CONFIG2" python3 "$RECAP" --json --project drift_project >"$TMP/named.json" ||
-  fail "recap.py --project exited nonzero"
-python3 - "$TMP/named.json" <<'PY' || exit 1
-import json, sys
-data = json.load(open(sys.argv[1], encoding="utf-8"))
-if len(data) != 2:
-    print(f"smoke: FAIL: --project drift_project matched {len(data)} sessions, expected 2",
-          file=sys.stderr)
-    raise SystemExit(1)
-print("smoke: ok: --project matches the real project directory")
-PY
-
-# every spelling of the same directory selects it: real separators, and the
+# every spelling of the same directory selects it: the real path, and the
 # dashed form users read off the ~/.claude/projects folder name
-for NEEDLE in drift-project workspace/drift_project; do
+for NEEDLE in drift_project drift-project workspace/drift_project; do
   CLAUDE_CONFIG_DIR="$CONFIG2" python3 "$RECAP" --json --project "$NEEDLE" >"$TMP/spelling.json" ||
     fail "recap.py --project $NEEDLE exited nonzero"
   python3 - "$TMP/spelling.json" "$NEEDLE" <<'PY' || exit 1
@@ -227,7 +214,7 @@ if len(data) != 2:
     raise SystemExit(1)
 PY
 done
-printf 'smoke: ok: --project accepts encoded and path spellings alike\n'
+printf 'smoke: ok: --project matches the project directory in every spelling\n'
 
 # ---------- 6. a rejected candidate must not eat the row budget ----------
 # recap over-fetches `limit * 2 + 5` candidates. Sessions whose history entry
@@ -246,20 +233,27 @@ config, enc, target, workspace, now_iso = sys.argv[1:6]
 import re
 encode = lambda p: re.sub(r"[^A-Za-z0-9]", "-", p)
 
-def write(path, rows):
+import time
+BASE = time.time() - 3600
+
+def write(path, rows, mtime):
     with open(path, "w", encoding="utf-8") as fh:
         for row in rows:
             fh.write(json.dumps(row) + "\n")
+    # recap inspects candidates newest mtime first. Stamp them explicitly: on a
+    # filesystem with 1-second timestamps every file written by this script
+    # would otherwise tie, and directory order, not age, would decide.
+    os.utime(path, (mtime, mtime))
 
 hist = []
-# 3 genuine matches first, so the decoys below get the newer mtimes
+# the genuine matches are the OLDEST files, so every decoy is inspected first
 for i in range(3):
     sid = f"cccccccc-0000-0000-0000-00000000000{i}"
     write(os.path.join(config, "projects", enc, sid + ".jsonl"), [
         {"type": "user", "cwd": target, "timestamp": now_iso, "sessionId": sid,
          "message": {"role": "user", "content": f"real session {i}"}},
         {"type": "ai-title", "aiTitle": f"Target session {i}"},
-    ])
+    ], BASE + i)
 
 # 12 decoys: their history entry still claims the target directory (a stale
 # path, e.g. after the folder was renamed), their transcript says otherwise
@@ -271,7 +265,7 @@ for i in range(12):
         {"type": "user", "cwd": decoy, "timestamp": now_iso, "sessionId": sid,
          "message": {"role": "user", "content": f"decoy {i}"}},
         {"type": "ai-title", "aiTitle": f"Decoy session {i}"},
-    ])
+    ], BASE + 100 + i)
     hist.append({"display": f"decoy {i}", "timestamp": 0,
                  "project": target, "sessionId": sid})
 
@@ -296,6 +290,58 @@ if wrong:
           file=sys.stderr)
     raise SystemExit(1)
 print("smoke: ok: filtered-out candidates do not starve --limit")
+PY
+
+# ---------- 7. --since is inside the same row budget ----------
+# Claude Code touches transcripts on compaction and title writes, so a file
+# can be fresh while its last real message is weeks old. Those sessions are
+# inspected first (newest mtime) and dropped by --since, so the drop has to
+# happen before the budget is spent, exactly like the --project one.
+CONFIG4="$TMP/claude4"
+RECENT="$TMP/workspace/recent_project"
+ENC4="-$(printf '%s' "${RECENT#/}" | tr -c 'A-Za-z0-9\n' '-')"
+mkdir -p "$RECENT" "$CONFIG4/projects/$ENC4" "$CONFIG4/projects/$ENC4-old"
+
+python3 - "$CONFIG4" "$ENC4" "$RECENT" "$NOW_ISO" <<'PY'
+import datetime, json, os, sys, time
+
+config, enc, project, now_iso = sys.argv[1:5]
+stale_iso = (datetime.datetime.now(datetime.timezone.utc)
+             - datetime.timedelta(days=10)).isoformat().replace("+00:00", "Z")
+BASE = time.time()
+
+def write(sid, iso, mtime):
+    path = os.path.join(config, "projects", enc, sid + ".jsonl")
+    with open(path, "w", encoding="utf-8") as fh:
+        for row in [
+            {"type": "user", "cwd": project, "timestamp": iso, "sessionId": sid,
+             "message": {"role": "user", "content": "hello"}},
+            {"type": "ai-title", "aiTitle": f"Session {sid[:8]}"},
+        ]:
+            fh.write(json.dumps(row) + "\n")
+    os.utime(path, (mtime, mtime))
+
+# 12 sessions with a fresh file but a 10-day-old conversation, newest first
+for i in range(12):
+    write(f"eeeeeeee-0000-0000-0000-0000000000{i:02d}", stale_iso, BASE - i)
+# 3 genuinely recent sessions, older files, still inside a 24h window
+for i in range(3):
+    write(f"ffffffff-0000-0000-0000-00000000000{i}", now_iso, BASE - 3600 - i)
+PY
+
+CLAUDE_CONFIG_DIR="$CONFIG4" python3 "$RECAP" --json --since 24h --limit 3 \
+  >"$TMP/since.json" || fail "recap.py --since (budget case) exited nonzero"
+python3 - "$TMP/since.json" <<'PY' || exit 1
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+if len(data) != 3:
+    print(f"smoke: FAIL: expected 3 in-window sessions, got {len(data)}: "
+          "touched-but-stale transcripts ate the over-fetch budget", file=sys.stderr)
+    raise SystemExit(1)
+if any(not s["sessionId"].startswith("ffffffff") for s in data):
+    print("smoke: FAIL: out-of-window sessions leaked past --since", file=sys.stderr)
+    raise SystemExit(1)
+print("smoke: ok: --since drops sessions before they spend the row budget")
 PY
 
 printf '\nsmoke: PASS\n'

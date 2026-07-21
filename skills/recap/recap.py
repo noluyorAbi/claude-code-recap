@@ -213,31 +213,42 @@ def matches_project(needle: str, path: str) -> bool:
 def project_prefilter(needle: str, transcript_file: str, hint) -> bool:
     """Cheap superset of matches_project, decided before the full parse.
 
-    A session resolves either to a cwd encoding to its containing folder or,
-    failing that, to `hint`. Testing the needle against both means this can
-    over-accept (the exact check runs again on the resolved path) but never
-    rejects a session the exact check would have kept.
+    resolve_project_path returns one of exactly three things, and each is
+    covered here: a path encoding to the containing folder (first test), the
+    `hint` (second test), or - only when there is no hint at all - the first
+    recorded cwd, which is why a missing hint accepts unconditionally. So this
+    over-accepts, and the exact check runs again on the resolved path, but it
+    never rejects a session that check would have kept.
     """
-    enc = encode_project_dir(needle).lower()
+    if hint is None:
+        return True
     folder = os.path.basename(os.path.dirname(transcript_file)).lower()
-    return enc in folder or (hint is not None and matches_project(needle, hint))
+    return (encode_project_dir(needle).lower() in folder
+            or matches_project(needle, hint))
 
-def resolve_project_path(transcript_file: str, candidates):
+def resolve_project_path(transcript_file: str, cwds, hint=None):
     """Pick the cwd a session can actually be resumed from.
 
     A session's transcript lives in the folder encoding the cwd it STARTED in.
     If the conversation later `cd`s elsewhere, later `cwd` fields point at the
     new directory and `claude -r <id>` run there finds no conversation. So the
-    first candidate whose encoding matches the containing folder wins.
+    first cwd whose encoding matches the containing folder wins.
+
+    Everything after that is recovery for transcripts that record no such cwd:
+    a sibling transcript's cwd (which encodes to the same folder), then the
+    caller's `hint`, then whatever the session recorded first. Keep `hint`
+    ahead of the recorded cwds so project_prefilter stays a true superset.
     """
     folder = os.path.basename(os.path.dirname(transcript_file))
-    for cand in candidates:
+    for cand in cwds:
         if cand and encode_project_dir(cand) == folder:
             return cand
     sibling = _folder_cwd(os.path.dirname(transcript_file))
     if sibling:
         return sibling
-    for cand in candidates:
+    if hint:
+        return hint
+    for cand in cwds:
         if cand:
             return cand
     return None
@@ -432,10 +443,12 @@ def collect(args):
         if d is None:
             continue
         # resume dir, not last-seen dir: a mid-conversation `cd` must not win
-        path = resolve_project_path(f, d["cwds"] + [hint]) or UNKNOWN_PATH
+        path = resolve_project_path(f, d["cwds"], hint) or UNKNOWN_PATH
         if needle and not matches_project(needle, path):
             continue
         last = d["last_ts"] or h.get("last_ts") or mtime
+        if cutoff and last < cutoff:
+            continue  # the file was touched inside the window, the session was not
         summary = (d["ai_title"] or h.get("first_prompt") or d["first_prompt"]
                    or "(no prompt)")
         out.append({
@@ -445,9 +458,7 @@ def collect(args):
             "ai_title": d["ai_title"], "first_prompt": d["first_prompt"] or h.get("first_prompt"),
         })
         if len(out) >= fetch:
-            break  # counts kept rows, so a filter never starves the limit
-    if cutoff:
-        out = [s for s in out if s["last"] >= cutoff]
+            break  # counts kept rows, so no filter can starve the limit
     out.sort(key=lambda s: s["last"], reverse=True)
     return out[: args.limit], day_counts
 
