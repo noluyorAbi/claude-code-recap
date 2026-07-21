@@ -232,14 +232,21 @@ TARGET="$TMP/workspace/target_project"
 ENC3="$(enc_dir "$TARGET")"
 mkdir -p "$TARGET" "$CONFIG3/projects/$ENC3"
 
-python3 - "$CONFIG3" "$ENC3" "$TARGET" "$TMP/workspace" "$NOW_ISO" <<'PY'
-import json, os, re, sys, time
+# the decoy directories and their folder names, from the same helper
+DECOYS="$TMP/decoys.tsv"
+: >"$DECOYS"
+I=0
+while [ "$I" -lt 12 ]; do
+  DECOY="$TMP/workspace/decoy$I"
+  printf '%s\t%s\n' "$DECOY" "$(enc_dir "$DECOY")" >>"$DECOYS"
+  I=$((I + 1))
+done
 
-config, enc, target, workspace, now_iso = sys.argv[1:6]
+python3 - "$CONFIG3" "$ENC3" "$TARGET" "$DECOYS" "$NOW_ISO" <<'PY'
+import json, os, sys, time
+
+config, enc, target, decoys_file, now_iso = sys.argv[1:6]
 BASE = time.time() - 3600
-
-def encode(path):
-    return re.sub(r"[^A-Za-z0-9]", "-", path)
 
 def write(path, rows, mtime):
     with open(path, "w", encoding="utf-8") as fh:
@@ -262,11 +269,11 @@ for i in range(3):
 
 # 12 decoys: their history entry still claims the target directory (a stale
 # path, e.g. after the folder was renamed), their transcript says otherwise
-for i in range(12):
+for i, line in enumerate(open(decoys_file, encoding="utf-8").read().splitlines()):
+    decoy, decoy_enc = line.split("\t")
     sid = f"dddddddd-0000-0000-0000-0000000000{i:02d}"
-    decoy = os.path.join(workspace, f"decoy{i}")
-    os.makedirs(os.path.join(config, "projects", encode(decoy)), exist_ok=True)
-    write(os.path.join(config, "projects", encode(decoy), sid + ".jsonl"), [
+    os.makedirs(os.path.join(config, "projects", decoy_enc), exist_ok=True)
+    write(os.path.join(config, "projects", decoy_enc, sid + ".jsonl"), [
         {"type": "user", "cwd": decoy, "timestamp": now_iso, "sessionId": sid,
          "message": {"role": "user", "content": f"decoy {i}"}},
         {"type": "ai-title", "aiTitle": f"Decoy session {i}"},
