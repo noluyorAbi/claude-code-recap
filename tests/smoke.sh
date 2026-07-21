@@ -227,14 +227,13 @@ ENC3="-$(printf '%s' "${TARGET#/}" | tr -c 'A-Za-z0-9\n' '-')"
 mkdir -p "$TARGET" "$CONFIG3/projects/$ENC3"
 
 python3 - "$CONFIG3" "$ENC3" "$TARGET" "$TMP/workspace" "$NOW_ISO" <<'PY'
-import json, os, sys
+import json, os, re, sys, time
 
 config, enc, target, workspace, now_iso = sys.argv[1:6]
-import re
-encode = lambda p: re.sub(r"[^A-Za-z0-9]", "-", p)
-
-import time
 BASE = time.time() - 3600
+
+def encode(path):
+    return re.sub(r"[^A-Za-z0-9]", "-", path)
 
 def write(path, rows, mtime):
     with open(path, "w", encoding="utf-8") as fh:
@@ -300,7 +299,7 @@ PY
 CONFIG4="$TMP/claude4"
 RECENT="$TMP/workspace/recent_project"
 ENC4="-$(printf '%s' "${RECENT#/}" | tr -c 'A-Za-z0-9\n' '-')"
-mkdir -p "$RECENT" "$CONFIG4/projects/$ENC4" "$CONFIG4/projects/$ENC4-old"
+mkdir -p "$RECENT" "$CONFIG4/projects/$ENC4"
 
 python3 - "$CONFIG4" "$ENC4" "$RECENT" "$NOW_ISO" <<'PY'
 import datetime, json, os, sys, time
@@ -342,6 +341,91 @@ if any(not s["sessionId"].startswith("ffffffff") for s in data):
     print("smoke: FAIL: out-of-window sessions leaked past --since", file=sys.stderr)
     raise SystemExit(1)
 print("smoke: ok: --since drops sessions before they spend the row budget")
+PY
+
+# ---------- 8. history is the last resort, and never hides the real path -----
+# When nothing in the transcript (and no sibling) encodes to the containing
+# folder, the history entry is all that is left, so it wins over the recorded
+# cwd. It must not win anywhere else: a session whose history entry points at
+# an unrelated directory still has to be found by --project on its own path,
+# which is what makes the cheap pre-filter safe.
+CONFIG5="$TMP/claude5"
+MOVED="$TMP/workspace/moved_project"
+HINTED="$TMP/workspace/hinted_project"
+OWN="$TMP/workspace/own_project"
+ENC_MOVED="-$(printf '%s' "${MOVED#/}" | tr -c 'A-Za-z0-9\n' '-')"
+ENC_OWN="-$(printf '%s' "${OWN#/}" | tr -c 'A-Za-z0-9\n' '-')"
+mkdir -p "$CONFIG5/projects/$ENC_MOVED" "$CONFIG5/projects/$ENC_OWN"
+
+SID_MOVED="88888888-0000-0000-0000-000000000001"
+SID_OWN="99999999-0000-0000-0000-000000000002"
+
+python3 - "$CONFIG5" "$ENC_MOVED" "$ENC_OWN" "$SID_MOVED" "$SID_OWN" \
+  "$HINTED" "$OWN" "$TMP/workspace/elsewhere" "$NOW_ISO" <<'PY'
+import json, os, sys
+
+(config, enc_moved, enc_own, sid_moved, sid_own,
+ hinted, own, elsewhere, now_iso) = sys.argv[1:10]
+
+def write(enc, sid, cwd, title):
+    with open(os.path.join(config, "projects", enc, sid + ".jsonl"), "w",
+              encoding="utf-8") as fh:
+        for row in [
+            {"type": "user", "cwd": cwd, "timestamp": now_iso, "sessionId": sid,
+             "message": {"role": "user", "content": "hello"}},
+            {"type": "ai-title", "aiTitle": title},
+        ]:
+            fh.write(json.dumps(row) + "\n")
+
+# its own folder encodes neither cwd, and it is alone in that folder, so the
+# sibling recovery finds nothing either: only history is left
+write(enc_moved, sid_moved, elsewhere, "Moved session")
+# this one's folder does encode its cwd; its history entry is stale
+write(enc_own, sid_own, own, "Own session")
+
+with open(os.path.join(config, "history.jsonl"), "w", encoding="utf-8") as fh:
+    for sid in (sid_moved, sid_own):
+        fh.write(json.dumps({"display": "hello", "timestamp": 0,
+                             "project": hinted, "sessionId": sid}) + "\n")
+PY
+
+CLAUDE_CONFIG_DIR="$CONFIG5" python3 "$RECAP" --json --limit 5 >"$TMP/hint.json" ||
+  fail "recap.py --json (hint fallback case) exited nonzero"
+python3 - "$TMP/hint.json" "$SID_MOVED" "$SID_OWN" "$HINTED" "$OWN" <<'PY' || exit 1
+import json, sys
+
+out, sid_moved, sid_own, hinted, own = sys.argv[1:6]
+data = json.load(open(out, encoding="utf-8"))
+by_id = {s["sessionId"]: s for s in data}
+
+def check(cond, msg):
+    if not cond:
+        print(f"smoke: FAIL: {msg}", file=sys.stderr)
+        print(json.dumps(data, indent=2), file=sys.stderr)
+        raise SystemExit(1)
+
+check(len(data) == 2, f"expected 2 sessions, got {len(data)}")
+check(by_id[sid_moved]["projectPath"] == hinted,
+      f"history was not the last resort: {by_id[sid_moved]['projectPath']}")
+check(by_id[sid_moved]["resume"] == f"cd {hinted} && claude -r {sid_moved}",
+      f"wrong resume command: {by_id[sid_moved]['resume']}")
+check(by_id[sid_own]["projectPath"] == own,
+      f"a stale history entry outranked the transcript: {by_id[sid_own]['projectPath']}")
+print("smoke: ok: history resolves a session only when nothing else can")
+PY
+
+# the stale-history session must still be reachable by its own directory
+CLAUDE_CONFIG_DIR="$CONFIG5" python3 "$RECAP" --json --project own_project \
+  >"$TMP/own.json" || fail "recap.py --project own_project exited nonzero"
+python3 - "$TMP/own.json" "$SID_OWN" <<'PY' || exit 1
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+ids = [s["sessionId"] for s in data]
+if ids != [sys.argv[2]]:
+    print(f"smoke: FAIL: --project own_project returned {ids}: the cheap "
+          "pre-filter dropped a session the exact check keeps", file=sys.stderr)
+    raise SystemExit(1)
+print("smoke: ok: --project reaches a session whose history entry points elsewhere")
 PY
 
 printf '\nsmoke: PASS\n'

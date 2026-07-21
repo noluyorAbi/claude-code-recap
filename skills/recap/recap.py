@@ -220,7 +220,7 @@ def project_prefilter(needle: str, transcript_file: str, hint) -> bool:
     over-accepts, and the exact check runs again on the resolved path, but it
     never rejects a session that check would have kept.
     """
-    if hint is None:
+    if not hint:  # same falsy test resolve_project_path applies to its fallback
         return True
     folder = os.path.basename(os.path.dirname(transcript_file)).lower()
     return (encode_project_dir(needle).lower() in folder
